@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Captain Cavity Fighter</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -17,7 +17,14 @@
         <button id="btn-female">Female Hero</button>
       </div>
     </div>
+
     <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <!-- On-Screen Visual Buttons -->
+    <div id="touch-controls">
+      <button id="btn-swing" class="action-btn">FLOSS<br>(SWING)</button>
+      <button id="btn-swat" class="action-btn">BRUSH<br>(SWAT)</button>
+    </div>
   </div>
 
   <script src="game.js"></script>
