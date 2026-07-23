@@ -26,7 +26,7 @@ const player = {
 let obstacles = [];
 let spawnTimer = 0;
 
-// UI & Touch Button Elements
+// UI Elements
 const charSelectMenu = document.getElementById("char-select");
 const scoreDisplay = document.getElementById("score-display");
 const btnSwing = document.getElementById("btn-swing");
@@ -44,10 +44,8 @@ function startGame(gender) {
   requestAnimationFrame(gameLoop);
 }
 
-// -------------------------------------------------------------
-// CORE ACTIONS (Reusable by Keyboard & Touch)
-// -------------------------------------------------------------
-function triggerSwing() {
+// Actions
+function doSwing() {
   if (!gameRunning) return;
   if (player.y === player.groundY) {
     player.velocityY = player.swingForce;
@@ -55,39 +53,32 @@ function triggerSwing() {
   }
 }
 
-function triggerSwat() {
+function doSwat() {
   if (!gameRunning) return;
   if (!isAttacking) {
     isAttacking = true;
-    setTimeout(() => { isAttacking = false; }, 250); // Attack duration 250ms
+    setTimeout(() => { isAttacking = false; }, 250);
   }
 }
 
-// -------------------------------------------------------------
-// KEYBOARD CONTROLS
-// -------------------------------------------------------------
+// Keyboard Inputs
 window.addEventListener("keydown", (e) => {
-  if (e.code === "Space" || e.code === "KeyA") triggerSwing();
-  if (e.code === "KeyD" || e.code === "Enter") triggerSwat();
+  if (e.code === "Space" || e.code === "KeyA") doSwing();
+  if (e.code === "KeyD" || e.code === "Enter") doSwat();
 });
 
-// -------------------------------------------------------------
-// TOUCHSCREEN / BUTTON CONTROLS
-// ('pointerdown' handles both touch screen taps and mouse clicks!)
-// -------------------------------------------------------------
+// On-Screen Button Inputs
 btnSwing.addEventListener("pointerdown", (e) => {
   e.preventDefault();
-  triggerSwing();
+  doSwing();
 });
 
 btnSwat.addEventListener("pointerdown", (e) => {
   e.preventDefault();
-  triggerSwat();
+  doSwat();
 });
 
-// -------------------------------------------------------------
-// MAIN GAME LOOP
-// -------------------------------------------------------------
+// Main Loop
 function gameLoop() {
   if (!gameRunning) return;
 
@@ -98,11 +89,11 @@ function gameLoop() {
 }
 
 function update() {
-  // 1. Score Tally
+  // Score Tally
   score++;
   scoreDisplay.innerText = "Score: " + Math.floor(score / 5);
 
-  // 2. Apply Player Gravity & Swing Movement
+  // Apply Player Gravity & Swing Movement
   player.y += player.velocityY;
   if (player.y < player.groundY) {
     player.velocityY += player.gravity;
@@ -112,7 +103,7 @@ function update() {
     isSwinging = false;
   }
 
-  // 3. Spawn Obstacles (Teeth or Cavities)
+  // Spawn Obstacles (Teeth or Cavities)
   spawnTimer++;
   if (spawnTimer > 100) {
     spawnTimer = 0;
@@ -126,12 +117,11 @@ function update() {
     });
   }
 
-  // 4. Update & Check Collisions
+  // Update & Check Collisions
   for (let i = obstacles.length - 1; i >= 0; i--) {
     let obs = obstacles[i];
-    obs.x -= 6; // Move obstacles left
+    obs.x -= 6;
 
-    // Collision Check
     if (
       player.x < obs.x + obs.width &&
       player.x + player.width > obs.x &&
@@ -139,15 +129,13 @@ function update() {
       player.y + player.height > obs.y
     ) {
       if (obs.type === "tooth") {
-        // Must swing OVER teeth! If grounded, game over.
         if (player.y >= player.groundY - 10) {
           gameOver("Collided with Tooth!");
         }
       } else if (obs.type === "cavity") {
-        // Must SWAT cavities! If not attacking, game over.
         if (isAttacking) {
-          obstacles.splice(i, 1); // Cavity defeated!
-          score += 50; // Bonus points
+          obstacles.splice(i, 1);
+          score += 50;
           continue;
         } else {
           gameOver("Hit by Cavity Villain!");
@@ -155,13 +143,11 @@ function update() {
       }
     }
 
-    // Remove offscreen obstacles
     if (obs.x < -50) obstacles.splice(i, 1);
   }
 }
 
 function draw() {
-  // Clear screen
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw Ground Line (Gums)
@@ -184,7 +170,7 @@ function draw() {
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(player.x + 25, player.y);
-    ctx.lineTo(player.x + 60, 0); // Floss shoots to roof of mouth
+    ctx.lineTo(player.x + 60, 0);
     ctx.stroke();
   }
 
