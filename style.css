@@ -1,0 +1,29 @@
+/* Touch Controls Styling */
+#touch-controls {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none; /* Allows canvas underneath to stay interactive */
+}
+
+.touch-btn {
+  pointer-events: auto; /* Re-enables touch/click on the actual buttons */
+  width: 100px;
+  height: 70px;
+  background: rgba(0, 210, 255, 0.7);
+  border: 3px solid #fff;
+  border-radius: 12px;
+  color: #000;
+  font-weight: bold;
+  font-size: 14px;
+  touch-action: manipulation; /* Prevents double-tap zoom delay on mobile */
+  user-select: none; /* Prevents text selection while tapping fast */
+}
+
+.touch-btn:active {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(0.95);
+}
