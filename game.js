@@ -1,26 +1,26 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Keep pixel art sharp and prevent blurriness
+// Keep pixel art sharp
 ctx.imageSmoothingEnabled = false;
 
 // -------------------------------------------------------------
-// 1. LOAD IMAGE & AUDIO ASSETS
+// 1. LOAD ASSETS
 // -------------------------------------------------------------
 const bgImg = new Image();
 bgImg.src = "assets/bg_mouth.png";
 
 const maleSprite = new Image();
-maleSprite.src = "assets/hero_male.png";
+maleSprite.src = "assets/hero_male.jpg"; // Updated to .jpg matching uploaded file
 
 const femaleSprite = new Image();
 femaleSprite.src = "assets/hero_female.png";
 
 const toothImg = new Image();
-toothImg.src = "assets/obstacle_tooth.png";
+toothImg.src = "assets/obstacle_tooth.jpg"; // Updated to .jpg matching uploaded file
 
 const cavityImg = new Image();
-cavityImg.src = "assets/enemy_cavity.png";
+cavityImg.src = "assets/enemy_cavity.jpg"; // Updated to .jpg matching uploaded file
 
 const bgMusic = new Audio("assets/bg_music.mp3");
 bgMusic.loop = true;
@@ -32,16 +32,17 @@ let score = 0;
 let selectedGender = "male"; 
 
 // Input States
-let isSwinging = false; // Floss Action (Jump)
-let isAttacking = false; // Toothbrush Action (Swat)
+let isSwinging = false; // Floss Action
+let isAttacking = false; // Toothbrush Action
+let animFrameTimer = 0;  // Frame counter for run cycle
 
 // Hero Object
 const player = {
   x: 100,
-  y: 240,
-  width: 70,
-  height: 90,
-  groundY: 240,
+  y: 235,
+  width: 75,
+  height: 95,
+  groundY: 235,
   velocityY: 0,
   gravity: 0.6,
   swingForce: -12
@@ -67,16 +68,14 @@ function startGame(gender) {
   score = 0;
   obstacles = [];
 
-  // Play background music on start
+  // Play background music
   bgMusic.currentTime = 0;
   bgMusic.play().catch(e => console.log("Audio deferred:", e));
 
   requestAnimationFrame(gameLoop);
 }
 
-// -------------------------------------------------------------
-// ACTIONS & INPUT CONTROLS
-// -------------------------------------------------------------
+// Actions
 function doSwing() {
   if (!gameRunning) return;
   if (player.y === player.groundY) {
@@ -93,13 +92,12 @@ function doSwat() {
   }
 }
 
-// Keyboard Inputs
+// Controls
 window.addEventListener("keydown", (e) => {
   if (e.code === "Space" || e.code === "KeyA") doSwing();
   if (e.code === "KeyD" || e.code === "Enter") doSwat();
 });
 
-// On-Screen Touch Inputs
 btnSwing.addEventListener("pointerdown", (e) => {
   e.preventDefault();
   doSwing();
@@ -110,9 +108,7 @@ btnSwat.addEventListener("pointerdown", (e) => {
   doSwat();
 });
 
-// -------------------------------------------------------------
-// MAIN GAME LOOP
-// -------------------------------------------------------------
+// Main Game Loop
 function gameLoop() {
   if (!gameRunning) return;
 
@@ -127,7 +123,9 @@ function update() {
   score++;
   scoreDisplay.innerText = "Score: " + Math.floor(score / 5);
 
-  // Apply Gravity & Physics
+  animFrameTimer++;
+
+  // Apply Physics
   player.y += player.velocityY;
   if (player.y < player.groundY) {
     player.velocityY += player.gravity;
@@ -145,8 +143,8 @@ function update() {
     obstacles.push({
       x: canvas.width,
       y: 250,
-      width: 60,
-      height: 75,
+      width: 55,
+      height: 65,
       type: type
     });
   }
@@ -154,7 +152,7 @@ function update() {
   // Check Collisions
   for (let i = obstacles.length - 1; i >= 0; i--) {
     let obs = obstacles[i];
-    obs.x -= 6; // Move obstacles left
+    obs.x -= 6;
 
     if (
       player.x < obs.x + obs.width &&
@@ -168,7 +166,7 @@ function update() {
         }
       } else if (obs.type === "cavity") {
         if (isAttacking) {
-          obstacles.splice(i, 1); // Cavity defeated
+          obstacles.splice(i, 1);
           score += 50;
           continue;
         } else {
@@ -177,7 +175,6 @@ function update() {
       }
     }
 
-    // Remove offscreen obstacles
     if (obs.x < -60) obstacles.splice(i, 1);
   }
 }
@@ -185,60 +182,80 @@ function update() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // -------------------------------------------------------------
-  // 1. DRAW MOUTH BACKGROUND
-  // -------------------------------------------------------------
+  // 1. DRAW BACKGROUND
   if (bgImg.complete && bgImg.naturalWidth !== 0) {
     ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
   } else {
-    // Fallback gradient if background image is still loading
     ctx.fillStyle = "#330011";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#881122";
-    ctx.fillRect(0, 330, canvas.width, 70);
+    ctx.fillRect(0, 320, canvas.width, 80);
   }
 
-  // -------------------------------------------------------------
-  // 2. DRAW HERO SPRITE
-  // -------------------------------------------------------------
+  // 2. DRAW HERO SPRITE (8 Columns, 2 Rows)
   const activeSprite = (selectedGender === "male") ? maleSprite : femaleSprite;
 
   if (activeSprite.complete && activeSprite.naturalWidth !== 0) {
-    ctx.drawImage(activeSprite, player.x, player.y, player.width, player.height);
+    const colWidth = activeSprite.naturalWidth / 8; // 8 sprite columns
+    const rowHeight = activeSprite.naturalHeight / 2; // 2 rows
+    const targetRow = 0; // Top row standard pose
+    let targetCol = 0;
+
+    if (isAttacking) {
+      targetCol = 7; // Column 8 (toothbrush swat pose)
+    } else if (isSwinging) {
+      targetCol = 6; // Column 7 (floss swing pose)
+    } else {
+      // Cycle through running animation columns 0 to 5
+      targetCol = Math.floor(animFrameTimer / 8) % 6;
+    }
+
+    ctx.drawImage(
+      activeSprite,
+      targetCol * colWidth, targetRow * rowHeight, colWidth, rowHeight,
+      player.x, player.y, player.width, player.height
+    );
   } else {
-    // Fallback box if sprite is still loading
     ctx.fillStyle = selectedGender === "male" ? "#00d2ff" : "#ff77bc";
     ctx.fillRect(player.x, player.y, player.width, player.height);
   }
 
-  // Visual Effect: White Floss Line during Swing
+  // Draw Floss Line Visual during Swing
   if (isSwinging) {
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(player.x + 35, player.y + 10);
-    ctx.lineTo(player.x + 85, 0);
+    ctx.moveTo(player.x + 40, player.y + 15);
+    ctx.lineTo(player.x + 90, 0);
     ctx.stroke();
   }
 
-  // Visual Effect: Toothbrush Swipe Box during Swat
-  if (isAttacking) {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(player.x + player.width, player.y + 20, 35, 15);
-  }
-
-  // -------------------------------------------------------------
-  // 3. DRAW OBSTACLES (Teeth & Cavity Monsters)
-  // -------------------------------------------------------------
+  // 3. DRAW OBSTACLES (Cropping single icons from obstacle sheets)
   obstacles.forEach(obs => {
-    const activeObsImg = (obs.type === "tooth") ? toothImg : cavityImg;
-
-    if (activeObsImg.complete && activeObsImg.naturalWidth !== 0) {
-      ctx.drawImage(activeObsImg, obs.x, obs.y, obs.width, obs.height);
-    } else {
-      // Fallback boxes if images are loading
-      ctx.fillStyle = (obs.type === "tooth") ? "#ffffff" : "#441144";
-      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    if (obs.type === "tooth") {
+      if (toothImg.complete && toothImg.naturalWidth !== 0) {
+        // Slice single tooth from upper right portion of sheet
+        const sw = toothImg.naturalWidth * 0.22;
+        const sh = toothImg.naturalHeight * 0.48;
+        const sx = toothImg.naturalWidth * 0.61;
+        const sy = 0;
+        ctx.drawImage(toothImg, sx, sy, sw, sh, obs.x, obs.y, obs.width, obs.height);
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    } else if (obs.type === "cavity") {
+      if (cavityImg.complete && cavityImg.naturalWidth !== 0) {
+        // Slice purple germ icon from top left portion of sheet
+        const sw = cavityImg.naturalWidth * 0.18;
+        const sh = cavityImg.naturalHeight * 0.45;
+        const sx = 0;
+        const sy = 0;
+        ctx.drawImage(cavityImg, sx, sy, sw, sh, obs.x, obs.y, obs.width, obs.height);
+      } else {
+        ctx.fillStyle = "#441144";
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
     }
   });
 }
