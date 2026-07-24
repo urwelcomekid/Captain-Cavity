@@ -1,11 +1,11 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Keep pixel art sharp and prevent blurriness
+// Keep pixel art crisp
 ctx.imageSmoothingEnabled = false;
 
 // -------------------------------------------------------------
-// 1. LOAD IMAGE ASSETS
+// 1. LOAD ASSETS (Images & Audio)
 // -------------------------------------------------------------
 const maleSprite = new Image();
 maleSprite.src = "assets/hero_male.png";
@@ -18,6 +18,10 @@ toothImg.src = "assets/obstacle_tooth.png";
 
 const cavityImg = new Image();
 cavityImg.src = "assets/enemy_cavity.png";
+
+const bgMusic = new Audio("assets/bg_music.mp3");
+bgMusic.loop = true;
+bgMusic.volume = 0.4;
 
 // Game States
 let gameRunning = false;
@@ -59,6 +63,11 @@ function startGame(gender) {
   gameRunning = true;
   score = 0;
   obstacles = [];
+
+  // Play background music
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(e => console.log("Audio deferred:", e));
+
   requestAnimationFrame(gameLoop);
 }
 
@@ -95,7 +104,7 @@ btnSwat.addEventListener("pointerdown", (e) => {
   doSwat();
 });
 
-// Main Loop
+// Main Game Loop
 function gameLoop() {
   if (!gameRunning) return;
 
@@ -168,26 +177,25 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // -------------------------------------------------------------
-  // DRAW GROUND (Gums)
+  // 1. DRAW GROUND (Gums)
   // -------------------------------------------------------------
   ctx.fillStyle = "#881122";
   ctx.fillRect(0, 340, canvas.width, 60);
 
   // -------------------------------------------------------------
-  // DRAW PLAYER SPRITE
+  // 2. DRAW PLAYER SPRITE
   // -------------------------------------------------------------
   const activeSprite = (selectedGender === "male") ? maleSprite : femaleSprite;
-  
-  // Choose sprite state (Swat, Swing, or Run)
+
   if (isAttacking) {
-    // Attack Pose (Top Right of sheet)
-    ctx.drawImage(activeSprite, 680, 20, 110, 140, player.x, player.y, player.width + 20, player.height);
+    // Attack Pose (Swatting Toothbrush)
+    ctx.drawImage(activeSprite, 820, 140, 180, 240, player.x, player.y - 10, player.width + 25, player.height + 10);
   } else if (isSwinging) {
-    // Floss Swing Pose (Top Middle-Right of sheet)
-    ctx.drawImage(activeSprite, 550, 20, 110, 140, player.x, player.y, player.width, player.height);
+    // Floss Swing Pose
+    ctx.drawImage(activeSprite, 650, 140, 150, 240, player.x, player.y - 10, player.width + 10, player.height + 10);
   } else {
-    // Running Pose (First sprite frame)
-    ctx.drawImage(activeSprite, 10, 20, 110, 140, player.x, player.y, player.width, player.height);
+    // Idle / Running Pose
+    ctx.drawImage(activeSprite, 20, 140, 130, 240, player.x, player.y, player.width, player.height);
   }
 
   // Draw Floss Line Visual during Swing
@@ -201,21 +209,22 @@ function draw() {
   }
 
   // -------------------------------------------------------------
-  // DRAW OBSTACLES
+  // 3. DRAW OBSTACLES
   // -------------------------------------------------------------
   obstacles.forEach(obs => {
     if (obs.type === "tooth") {
-      // Crop Healthy Tooth from toothImg sheet
-      ctx.drawImage(toothImg, 500, 20, 130, 150, obs.x, obs.y, obs.width, obs.height);
+      // Healthy Tooth
+      ctx.drawImage(toothImg, 620, 200, 160, 200, obs.x, obs.y, obs.width, obs.height);
     } else if (obs.type === "cavity") {
-      // Crop Cavity Villain from cavityImg sheet
-      ctx.drawImage(cavityImg, 150, 20, 130, 150, obs.x, obs.y, obs.width, obs.height);
+      // Cavity Villain
+      ctx.drawImage(cavityImg, 30, 70, 160, 180, obs.x, obs.y, obs.width, obs.height);
     }
   });
 }
 
 function gameOver(reason) {
   gameRunning = false;
+  bgMusic.pause();
   alert("GAME OVER: " + reason + "\nFinal Score: " + Math.floor(score / 5));
   charSelectMenu.style.display = "block";
 }
